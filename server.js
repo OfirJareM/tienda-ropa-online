@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-// const FileStore = require('session-file-store')(session); // <--- ELIMINAMOS ESTA LÍNEA
+const MongoStore = require('connect-mongo'); // <-- 1. IMPORTAMOS LA NUEVA HERRAMIENTA
 const multer = require('multer');
 const mongoose = require('mongoose');
 
@@ -28,12 +28,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- CONFIGURACIÓN DE SESIÓN (SIMPLIFICADA) ---
+// --- CONFIGURACIÓN DE SESIÓN (CON MONGODB) ---
 app.use(session({
-    // store: new FileStore({ path: './sessions' }), // <--- ELIMINAMOS ESTA LÍNEA
     secret: process.env.SESSION_SECRET || 'un secreto muy secreto',
     resave: false,
     saveUninitialized: false,
+    // 2. USAMOS MONGOSTORE PARA GUARDAR LAS SESIONES EN LA BASE DE DATOS
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'sessions' // Nombre de la colección donde se guardarán
+    }),
     cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
@@ -46,7 +50,7 @@ app.use(express.static(__dirname));
 const checkAuth = (req, res, next) => { if (req.session.user) next(); else res.status(401).send('Acceso no autorizado.'); };
 const checkVendedor = (req, res, next) => { if (req.session.user && req.session.user.role === 'vendedor') next(); else res.status(403).send('Acceso denegado.'); };
 
-// --- RUTAS PARA SERVIR PÁGINAS HTML (MÁS EXPLÍCITO) ---
+// --- RUTAS PARA SERVIR PÁGINAS HTML ---
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 app.get('/register.html', (req, res) => { res.sendFile(path.join(__dirname, 'register.html')); });
 app.get('/iniciar-sesion.html', (req, res) => { res.sendFile(path.join(__dirname, 'iniciar-sesion.html')); });
