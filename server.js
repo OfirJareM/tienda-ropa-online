@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
+// const FileStore = require('session-file-store')(session); // <--- ELIMINAMOS ESTA LÍNEA
 const multer = require('multer');
 const mongoose = require('mongoose');
 
@@ -11,7 +11,7 @@ const User = require('./models/User');
 const Product = require('./models/Product');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Vercel puede asignar un puerto, usamos el que nos dé
+const PORT = process.env.PORT || 3000;
 
 // --- CONEXIÓN A MONGODB ---
 mongoose.connect(process.env.MONGO_URI)
@@ -28,10 +28,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- CONFIGURACIÓN DE SESIÓN ---
+// --- CONFIGURACIÓN DE SESIÓN (SIMPLIFICADA) ---
 app.use(session({
-    store: new FileStore({ path: './sessions' }),
-    secret: process.env.SESSION_SECRET || 'un secreto muy secreto', // Es mejor usar una variable de entorno
+    // store: new FileStore({ path: './sessions' }), // <--- ELIMINAMOS ESTA LÍNEA
+    secret: process.env.SESSION_SECRET || 'un secreto muy secreto',
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 1000 * 60 * 60 * 24 }
@@ -46,9 +46,16 @@ app.use(express.static(__dirname));
 const checkAuth = (req, res, next) => { if (req.session.user) next(); else res.status(401).send('Acceso no autorizado.'); };
 const checkVendedor = (req, res, next) => { if (req.session.user && req.session.user.role === 'vendedor') next(); else res.status(403).send('Acceso denegado.'); };
 
-// --- RUTAS ---
-// (Todas tus rutas de API y HTML van aquí, sin cambios)
+// --- RUTAS PARA SERVIR PÁGINAS HTML (MÁS EXPLÍCITO) ---
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+app.get('/register.html', (req, res) => { res.sendFile(path.join(__dirname, 'register.html')); });
+app.get('/iniciar-sesion.html', (req, res) => { res.sendFile(path.join(__dirname, 'iniciar-sesion.html')); });
+app.get('/dashboard.html', (req, res) => { res.sendFile(path.join(__dirname, 'dashboard.html')); });
+app.get('/upload.html', (req, res) => { res.sendFile(path.join(__dirname, 'upload.html')); });
+app.get('/cart.html', (req, res) => { res.sendFile(path.join(__dirname, 'cart.html')); });
+app.get('/product.html', (req, res) => { res.sendFile(path.join(__dirname, 'product.html')); });
+
+// --- RUTAS DE API (SIN CAMBIOS) ---
 app.get('/get-products', async (req, res) => { try { const productos = await Product.find(); res.json(productos); } catch (err) { res.status(500).send('Error al obtener los productos.'); } });
 app.post('/upload-product', checkAuth, checkVendedor, upload.single('imagen'), async (req, res) => { try { const { nombre, precio, categoria } = req.body; const imagen = req.file ? req.file.filename : null; if (!imagen) return res.status(400).send('No se subió ninguna imagen.'); const nuevoProducto = new Product({ nombre, precio: parseFloat(precio), categoria, imagen, vendedor: req.session.user.username }); await nuevoProducto.save(); res.status(200).send('Producto guardado!'); } catch (err) { res.status(500).send('Error al guardar el producto.'); } });
 app.get('/api/product/:name', async (req, res) => { try { const producto = await Product.findOne({ nombre: req.params.name }); if (producto) res.json(producto); else res.status(404).send('Producto no encontrado.'); } catch (err) { res.status(500).send('Error al buscar el producto.'); } });
@@ -61,6 +68,4 @@ app.post('/login', async (req, res) => { try { const { username, password } = re
 app.post('/logout', (req, res) => { req.session.destroy(err => { if (err) return res.status(500).send('No se pudo cerrar la sesión.'); res.clearCookie('connect.sid'); res.status(200).send('Sesión cerrada con éxito.'); }); });
 app.get('/api/user-status', (req, res) => { if (req.session.user) { res.json({ loggedIn: true, user: req.session.user }); } else { res.json({ loggedIn: false }); } });
 
-// --- CAMBIO CLAVE ---
-// Ya no usamos app.listen(). En su lugar, exportamos la app para que Vercel la use.
 module.exports = app;
