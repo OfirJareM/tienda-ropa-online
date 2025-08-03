@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // <-- 1. IMPORTAMOS LA NUEVA HERRAMIENTA
+const MongoStore = require('connect-mongo');
 const multer = require('multer');
 const mongoose = require('mongoose');
 
@@ -11,32 +11,24 @@ const User = require('./models/User');
 const Product = require('./models/Product');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+console.log('--- INICIANDO SERVIDOR ---');
+console.log('MONGO_URI encontrada:', process.env.MONGO_URI ? 'Sí' : 'No');
+console.log('SESSION_SECRET encontrada:', process.env.SESSION_SECRET ? 'Sí' : 'No');
 
 // --- CONEXIÓN A MONGODB ---
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Conectado a MongoDB Atlas'))
-    .catch(err => console.error('Error al conectar a MongoDB:', err));
-
-// --- CONFIGURACIÓN DE MULTER ---
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'img/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
+    .then(() => console.log('Conexión a MongoDB Atlas exitosa.'))
+    .catch(err => console.error('!!! ERROR al conectar a MongoDB:', err));
 
 // --- CONFIGURACIÓN DE SESIÓN (CON MONGODB) ---
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'un secreto muy secreto',
+    secret: process.env.SESSION_SECRET || 'fallback-secret',
     resave: false,
     saveUninitialized: false,
-    // 2. USAMOS MONGOSTORE PARA GUARDAR LAS SESIONES EN LA BASE DE DATOS
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
-        collectionName: 'sessions' // Nombre de la colección donde se guardarán
+        collectionName: 'sessions'
     }),
     cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
@@ -59,7 +51,37 @@ app.get('/upload.html', (req, res) => { res.sendFile(path.join(__dirname, 'uploa
 app.get('/cart.html', (req, res) => { res.sendFile(path.join(__dirname, 'cart.html')); });
 app.get('/product.html', (req, res) => { res.sendFile(path.join(__dirname, 'product.html')); });
 
-// --- RUTAS DE API (SIN CAMBIOS) ---
+// --- RUTAS DE API ---
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+        if (!user) return res.status(400).send('Usuario o contraseña incorrectos.');
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).send('Usuario o contraseña incorrectos.');
+
+        req.session.user = { username: user.username, role: user.role };
+        console.log('SESIÓN CREADA PARA:', req.session.user);
+        res.status(200).json({ message: 'Login exitoso', user: req.session.user });
+    } catch (err) {
+        console.error('!!! ERROR EN LOGIN:', err);
+        res.status(500).send('Error al iniciar sesión.');
+    }
+});
+
+app.get('/api/user-status', (req, res) => {
+    console.log('Revisando estado de usuario. Sesión encontrada:', req.session.user ? req.session.user : 'Ninguna');
+    if (req.session.user) {
+        res.json({ loggedIn: true, user: req.session.user });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+// (El resto de las rutas de API se mantienen igual)
+const storage = multer.diskStorage({ destination: (req, file, cb) => cb(null, 'img/'), filename: (req, file, cb) => { const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); } });
+const upload = multer({ storage: storage });
 app.get('/get-products', async (req, res) => { try { const productos = await Product.find(); res.json(productos); } catch (err) { res.status(500).send('Error al obtener los productos.'); } });
 app.post('/upload-product', checkAuth, checkVendedor, upload.single('imagen'), async (req, res) => { try { const { nombre, precio, categoria } = req.body; const imagen = req.file ? req.file.filename : null; if (!imagen) return res.status(400).send('No se subió ninguna imagen.'); const nuevoProducto = new Product({ nombre, precio: parseFloat(precio), categoria, imagen, vendedor: req.session.user.username }); await nuevoProducto.save(); res.status(200).send('Producto guardado!'); } catch (err) { res.status(500).send('Error al guardar el producto.'); } });
 app.get('/api/product/:name', async (req, res) => { try { const producto = await Product.findOne({ nombre: req.params.name }); if (producto) res.json(producto); else res.status(404).send('Producto no encontrado.'); } catch (err) { res.status(500).send('Error al buscar el producto.'); } });
@@ -68,8 +90,6 @@ app.post('/api/edit-product', checkAuth, checkVendedor, async (req, res) => { tr
 app.get('/api/my-products', checkAuth, checkVendedor, async (req, res) => { try { const misProductos = await Product.find({ vendedor: req.session.user.username }); res.json(misProductos); } catch (err) { res.status(500).send('Error al obtener tus productos.'); } });
 app.get('/api/categories', async (req, res) => { try { const categorias = await Product.distinct('categoria'); res.json(categorias.sort()); } catch (err) { res.status(500).send('Error al obtener las categorías.'); } });
 app.post('/register', async (req, res) => { try { const { username, password, role } = req.body; const existingUser = await User.findOne({ username }); if (existingUser) return res.status(400).send('El nombre de usuario ya existe.'); const salt = await bcrypt.genSalt(10); const hashedPassword = await bcrypt.hash(password, salt); const newUser = new User({ username, password: hashedPassword, role }); await newUser.save(); res.status(201).send('Usuario registrado con éxito.'); } catch (err) { res.status(500).send('Error al registrar el usuario.'); } });
-app.post('/login', async (req, res) => { try { const { username, password } = req.body; const user = await User.findOne({ username }); if (!user) return res.status(400).send('Usuario o contraseña incorrectos.'); const isMatch = await bcrypt.compare(password, user.password); if (!isMatch) return res.status(400).send('Usuario o contraseña incorrectos.'); req.session.user = { username: user.username, role: user.role }; res.status(200).json({ message: 'Login exitoso', user: req.session.user }); } catch (err) { res.status(500).send('Error al iniciar sesión.'); } });
 app.post('/logout', (req, res) => { req.session.destroy(err => { if (err) return res.status(500).send('No se pudo cerrar la sesión.'); res.clearCookie('connect.sid'); res.status(200).send('Sesión cerrada con éxito.'); }); });
-app.get('/api/user-status', (req, res) => { if (req.session.user) { res.json({ loggedIn: true, user: req.session.user }); } else { res.json({ loggedIn: false }); } });
 
 module.exports = app;
