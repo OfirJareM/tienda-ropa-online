@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Panel de Vendedor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="/js/global.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Panel de Vendedor</h1>
+    </header>
+
+    <main class="container">
+        <a href="upload.html" class="button">Subir Nuevo Producto</a>
+        <hr>
+        <h2>Mis Productos Publicados</h2>
+        <div id="my-products-container">
+            <!-- Mis productos se cargarán aquí con JavaScript -->
+        </div>
+
+        <!-- ===== MODAL DE EDICIÓN ===== -->
+        <div id="edit-modal" class="modal-hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2>Editar Producto</h2>
+                <form id="edit-form">
+                    <input type="hidden" id="edit-nombre-original">
+                    
+                    <label for="edit-nombre">Nuevo Nombre:</label>
+                    <input type="text" id="edit-nombre" required><br><br>
+                    
+                    <label for="edit-precio">Nuevo Precio:</label>
+                    <input type="number" id="edit-precio" required><br><br>
+                    
+                    <button type="submit">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== MODAL DE CONFIRMACIÓN DE ELIMINACIÓN ===== -->
+        <div id="delete-confirm-modal" class="modal-hidden">
+            <div class="modal-content">
+                <h2>Confirmar Eliminación</h2>
+                <p>¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.</p>
+                <div class="modal-buttons">
+                    <button id="confirm-delete-btn" class="delete-btn">Sí, Eliminar</button>
+                    <button id="cancel-delete-btn" class="button">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

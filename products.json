@@ -1,0 +1,54 @@
+[
+  {
+    "nombre": "2b",
+    "precio": 44,
+    "imagen": "imagen-1753990886193-217332161.png",
+    "vendedor": "2"
+  },
+  {
+    "nombre": "2aa",
+    "precio": 22,
+    "imagen": "imagen-1754113745658-411347909.png",
+    "vendedor": "2"
+  },
+  {
+    "nombre": "3b",
+    "precio": 33,
+    "imagen": "imagen-1754114064048-264950345.png",
+    "vendedor": "3"
+  },
+  {
+    "nombre": "3a",
+    "precio": 3333,
+    "imagen": "imagen-1754114092615-564820809.png",
+    "vendedor": "3"
+  },
+  {
+    "nombre": "2c",
+    "precio": 211,
+    "categoria": "camisas",
+    "imagen": "imagen-1754116819375-925839842.png",
+    "vendedor": "2"
+  },
+  {
+    "nombre": "2d",
+    "precio": 21,
+    "categoria": "camisas",
+    "imagen": "imagen-1754116875445-673086556.png",
+    "vendedor": "2"
+  },
+  {
+    "nombre": "2e",
+    "precio": 21,
+    "categoria": "camisas",
+    "imagen": "imagen-1754116911057-961119856.png",
+    "vendedor": "2"
+  },
+  {
+    "nombre": "2f",
+    "precio": 222,
+    "categoria": "camisas",
+    "imagen": "imagen-1754116929618-718826995.png",
+    "vendedor": "2"
+  }
+]

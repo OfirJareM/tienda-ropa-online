@@ -1,0 +1,17 @@
+[
+  {
+    "username": "1",
+    "password": "$2b$10$GLTsEcPlOzQDh1glCQk5Xudh2w6rFjhHWguQSzZVq52Zhi.NAUjaW",
+    "role": "cliente"
+  },
+  {
+    "username": "2",
+    "password": "$2a$10$x4C7TG1gBlrDHHeLc5Q4rOPq8Jm4rfgSsIc1/2PxuG.GP/dZt9WzG",
+    "role": "vendedor"
+  },
+  {
+    "username": "3",
+    "password": "$2a$10$cbGL.nsoRzwjNMfSzG0lb.O9dLw1ExBkVr1zTPsNbtN6Z/uCFkw16",
+    "role": "vendedor"
+  }
+]
